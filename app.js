@@ -164,7 +164,9 @@ app.configure(function() {
 
   //middleware + res.locals
   app.use(function(req, res, next) {
-    res.locals.username = req.session.username;
+    if (req.session && req.session.username) {
+      res.locals.username = req.session.username;
+    }
     next();
   });
 

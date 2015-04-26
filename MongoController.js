@@ -141,19 +141,19 @@ MongoController.prototype.createUser = function (email, password, uuid) {
   var _this = this;
 
   bcrypt.genSalt(10, function(err, salt) {
-      bcrypt.hash(password, salt, function(err, hash) {
-          // Store hash in your password DB.
-        var newUser = new _this.user({
-          email: email,
-          password_hash: hash,
-          uuid: uuid,
-          activated: false
-        });
-
-        newUser.save(function(err, doc) {
-          if(err) console.log('save error: ' + err);
-        });
+    bcrypt.hash(password, salt, function(err, hash) {
+        // Store hash in your password DB.
+      var newUser = new _this.user({
+        email: email,
+        password_hash: hash,
+        uuid: uuid,
+        activated: false
       });
+
+      newUser.save(function(err, doc) {
+        if(err) console.log('save error: ' + err);
+      });
+    });
   });
 }
 
