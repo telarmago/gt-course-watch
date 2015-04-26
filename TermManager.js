@@ -71,9 +71,14 @@ TermManager.prototype.poll_new_terms = function() {
 
     res
     .on('end', function() {
+
     	var $ = cheerio.load(body.join(''));
 
-      var term_opts = $('#term_input_id')['0'].children;
+      if($('#term_input_id') && $('#term_input_id')['0']) {
+        var term_opts = $('#term_input_id')['0'].children;
+      } else{
+        var term_opts = [];      
+      }
 
     	for(var i=0; i<term_opts.length; i++) {
     		if(term_opts[i].attribs && term_opts[i].children) {
