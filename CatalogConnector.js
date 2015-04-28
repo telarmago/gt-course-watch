@@ -24,7 +24,7 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	this.start_crn = 87000;
+	this.start_crn = 10000;
 	this.end_crn = 99999;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
@@ -118,7 +118,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 	  	if(docs.length == 0) {
 	  		_this.gt_https_req(path, function($){
 	  			// console.log('err len', $('.errortext').length)
-	  			console.log("CRN TESTED: ", crn, ' ', term)
+	  			// console.log("CRN TESTED: ", crn, ' ', term)
 		      if(!$('.errortext').length) {
 		      	// console.log('VALID CRN: ', crn, ' ', term)
 		      	cb(true, $, term, path);
@@ -139,7 +139,7 @@ CatalogConnector.prototype.check_catalog_entry = function($, term, path) {
 	var _this = this;
 
 	// TRACKING show paths that belong to VALID CRNS
-	console.log(path);
+	// console.log(path);
 
 	$('a').each(function() {
 		if(_this.link_to_text(this) == 'View Catalog Entry') {
@@ -323,7 +323,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 		if(title_comps.length > 3) {
 			//handle case where name of course has a hyphen in it
 			if(title_comps.length == 5) {
-				// transform non-standard (length 5) form title into standard form title (length 4)
+				// transform non-standard form title (length 5) into standard form title (length 4)
 				title_comps = [
 					title_comps[0] + '-' + title_comps[1],
 					title_comps[2],
