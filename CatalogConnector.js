@@ -52,6 +52,9 @@ CatalogConnector.prototype.stop_unprobed_term_poller = function() {
 	}
 };
 
+/*
+THIS IS WHERE CONSUMER MEETS PRODUCER
+*/
 CatalogConnector.prototype.poll_unprobed_terms = function(cb) {
 	// Process one term at a time, wait till the q is empty to proceed.
 	if(this.qprocessor.empty()) {

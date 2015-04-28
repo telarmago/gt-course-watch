@@ -22,6 +22,11 @@ function TermManager(connection_url, delay) {
 	this.start_season_poller(delay);
 }
 
+
+/*
+This depends there on unique term_code's per given document
+in the collection. No two docs should share term_code.
+*/
 TermManager.prototype.set_probed = function(term_code, val) {
 	this.historical_terms.update(
 		{code:term_code},
@@ -37,9 +42,9 @@ TermManager.prototype.is_new_term = function(term_obj, cb) {
 	this.historical_terms.findOne(term_obj)
 	.on('success', function (doc) {
 		if(!doc) { 
-			cb(true);
+			cb(true, term_obj);
 		}else {
-			cb(false);
+			cb(false, term_obj);
 		}		
 	});
 };
@@ -88,6 +93,9 @@ TermManager.prototype.poll_new_terms = function() {
     				 	d = new Date(),
     				 	year = d.getFullYear();
 
+          // console.log("Checking box of terms...")
+          // console.log('code: ', term_code, ' str: ', term_str)
+
     			//Check if its a typical registration term
     			if(term_comps.length == 2) {
     				//Check if the term is from this year (summer/fall) or next year (spring)
@@ -97,9 +105,14 @@ TermManager.prototype.poll_new_terms = function() {
     						str: term_str
     					}
 
-    					_this.is_new_term(term_obj, function(is_new) {
+
+    					_this.is_new_term(term_obj, function(is_new, term_obj) {
     						//encountered new term
-    						if(is_new) {
+
+                // console.log("TERM OBJ CONSIDERED: ", term_obj)
+
+                if(is_new) {
+                  // console.log("NEW TERM OBJ: ", term_obj)
     							_this.add_new_term(term_obj);
     						}
     					});
@@ -137,6 +150,7 @@ TermManager.prototype.stop_season_poller = function() {
 TermManager.prototype.get_unprobed_terms = function(cb) {
 	this.historical_terms.find({probed:false})
 	.on('success', function (docs) {
+    console.log("UNPROBED TERMS", docs)
 		cb(docs);
 	});
 };
