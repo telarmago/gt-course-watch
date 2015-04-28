@@ -24,7 +24,7 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	this.start_crn = 10000;
+	this.start_crn = 53840;
 	this.end_crn = 99999;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
@@ -118,9 +118,10 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 	  	if(docs.length == 0) {
 	  		_this.gt_https_req(path, function($){
 	  			// console.log('err len', $('.errortext').length)
-	  			// console.log("CRN TESTED: ", crn, ' ', term)
+		  		// console.log("CRN TESTED: ", crn, ' ', term)
+
 		      if(!$('.errortext').length) {
-		      	// console.log('VALID CRN: ', crn, ' ', term)
+		      	console.log('VALID CRN: ', crn, ' ', term)
 		      	cb(true, $, term, path);
 		      }
 	  		});
@@ -246,10 +247,6 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 	// CHECK SCHED PATH SECTION
 
 	function check_sched_path(course_info_comps, subj, course_num) {
-		var check_obj = {
-			subj: subj,
-			num: course_num
-		};
 
 		if(course_info_comps) {
 			//Find the Schedule listings page path to probe.
@@ -266,14 +263,7 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 					var sched_path = sched_txt.slice(start_link_idx+1, end_link_idx),
 							sched_path = sched_path.replace(/&amp;/g, '&');
 
-					//Only parse schedue listing if no matching class subj +
-					// class num exist in the term_courses db
-					_this.term_courses.find(check_obj)
-					.on('success', function(docs) {
-						if(!docs.length) {
-							_this.parse_schedule_listing(term, sched_path);
-						}
-					});
+					_this.parse_schedule_listing(term, sched_path);
 				}
 			}
 		}
@@ -287,6 +277,9 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 	var _this = this;
 	// console.log(path);
+
+	console.log('INSIDE PARSE SCHEDULE LISTING');
+	console.log(term, path);
 
 	_this.gt_https_req(path, function($) {
 		$('.datadisplaytable[summary="This layout table is used to present the sections found"] > tr')
@@ -308,6 +301,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 						parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
 							parse_upper_table(upper_table, sect_obj, function(sect_obj) {
 								// console.log("SAVE TERM CALLED");
+								console.log('saving: ', sect_obj.crn);
 								_this.save_term_course(sect_obj);
 							});
 						});
