@@ -150,7 +150,7 @@ TermManager.prototype.stop_season_poller = function() {
 TermManager.prototype.get_unprobed_terms = function(cb) {
 	this.historical_terms.find({probed:false})
 	.on('success', function (docs) {
-    console.log("UNPROBED TERMS", docs)
+    // console.log("UNPROBED TERMS", docs)
 		cb(docs);
 	});
 };
