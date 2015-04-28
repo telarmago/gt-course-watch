@@ -24,7 +24,7 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	this.start_crn = 53840;
+	this.start_crn = 10000;
 	this.end_crn = 99999;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
@@ -278,8 +278,8 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 	var _this = this;
 	// console.log(path);
 
-	console.log('INSIDE PARSE SCHEDULE LISTING');
-	console.log(term, path);
+	// console.log('INSIDE PARSE SCHEDULE LISTING');
+	// console.log(term, path);
 
 	_this.gt_https_req(path, function($) {
 		$('.datadisplaytable[summary="This layout table is used to present the sections found"] > tr')
@@ -301,7 +301,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 						parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
 							parse_upper_table(upper_table, sect_obj, function(sect_obj) {
 								// console.log("SAVE TERM CALLED");
-								console.log('saving: ', sect_obj.crn);
+								// console.log('saving: ', sect_obj.crn);
 								_this.save_term_course(sect_obj);
 							});
 						});
