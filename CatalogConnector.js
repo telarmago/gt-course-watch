@@ -27,7 +27,7 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.start_crn = 10000;
 	this.end_crn = 99999;
 	this.start_unprobed_term_poller(unprobedt_delay);
-	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
+	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this, 25);
 };
 
 CatalogConnector.prototype.start_unprobed_term_poller = function(delay) {
@@ -117,12 +117,14 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 	.on('success', function (docs) {
 	  	if(docs.length == 0) {
 	  		_this.gt_https_req(path, function($){
-		      if($('.errortext').length) {
+	  			// console.log('err len', $('.errortext').length)
+	  			console.log("CRN TESTED: ", crn, ' ', term)
+		      if(!$('.errortext').length) {
+		      	// console.log('VALID CRN: ', crn, ' ', term)
 		      	cb(true, $, term, path);
 		      }
 	  		});
 	  	}
-
 	})
 	.on('error', function(err){
 		console.log(err);
@@ -301,6 +303,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 
 						parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
 							parse_upper_table(upper_table, sect_obj, function(sect_obj) {
+								// console.log("SAVE TERM CALLED");
 								_this.save_term_course(sect_obj);
 							});
 						});
