@@ -24,10 +24,10 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	this.start_crn = 10000;
+	this.start_crn = 86000;
 	this.end_crn = 99999;
 	this.start_unprobed_term_poller(unprobedt_delay);
-	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this, 25);
+	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
 };
 
 CatalogConnector.prototype.start_unprobed_term_poller = function(delay) {
@@ -184,6 +184,10 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 			title: course_title
 		};
 
+		/*
+		Add a course to the course_info collection if it is not already present.
+		*/
+
 		_this.course_info.find(course_info_obj)
 		.on('success', function(docs) {
 			//If the course isn't present in the catalog, parse and add it.
@@ -292,7 +296,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 			if(section_header) {
 				var header_link = $(section_header).children('a')['0'],
 						header_txt = $(header_link).text(),
-						header_comps = header_txt.split('-');
+						header_comps = header_txt.split(' - ');
 
 				eval_sect_title(header_comps, function(sect_obj) {
 					if(sect_obj) {
