@@ -24,7 +24,7 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	this.start_crn = 86000;
+	this.start_crn = 87000;
 	this.end_crn = 99999;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
@@ -321,6 +321,17 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 
 	function eval_sect_title(title_comps, cb) {
 		if(title_comps.length > 3) {
+			//handle case where name of course has a hyphen in it
+			if(title_comps.length == 5) {
+				// transform non-standard (length 5) form title into standard form title (length 4)
+				title_comps = [
+					title_comps[0] + '-' + title_comps[1],
+					title_comps[2],
+					title_comps[3],
+					title_comps[4]
+				]
+			}
+
 			var check_obj = {
 				term: term,
 				crn: title_comps[1].trim()
