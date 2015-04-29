@@ -24,8 +24,10 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	this.start_crn = 10000;
-	this.end_crn = 99999;
+	// this.start_crn = 10000;
+	// this.end_crn = 99999;
+	this.start_crn = 20000;
+	this.end_crn = 20100;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
 };
@@ -120,9 +122,11 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   		cb = arguments[0][3]
   }
 
+  console.log("PRE CHECK DUPE: ", crn, term);
+
   // Only transition to .check_catalog_entry if CRN, TERMCODE combination
   // Are not found in the term_courses collection.
-  this.term_courses.find({term_code: term, crn: crn})
+  this.term_courses.find({term: term, crn: crn})
 	.on('success', function (docs) {
 	  	if(docs.length == 0) {
 	  		_this.gt_https_req(path, function($){
@@ -130,7 +134,8 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 		  		// console.log("CRN TESTED: ", crn, ' ', term)
 
 		      if(!$('.errortext').length) {
-		      	// console.log('VALID CRN: ', crn, ' ', term)
+		      	console.log('VALID DOCs: ', docs, term, crn);
+		      	// console.log('VALID CRN: ', crn, ' ', term);
 		      	cb(true, $, term, path);
 		      }
 	  		});
@@ -335,28 +340,17 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 				]
 			}
 
-			var check_obj = {
-				term: term,
-				crn: title_comps[1].trim()
-			};
+			var sect_obj = check_obj;
 
-			_this.term_courses.find(check_obj)
-			.on('success', function(docs) {
-				if(!docs.length) { //The section isn't in the system, so add it
-					var sect_obj = check_obj;
+			sect_obj.title = title_comps[0].trim();
 
-					sect_obj.title = title_comps[0].trim();
+			var tmp = title_comps[2].trim().split(' ');
+			sect_obj.subj = tmp[0];
+			sect_obj.num = tmp[1];
+			sect_obj.sect_id = title_comps[3].trim();
 
-					var tmp = title_comps[2].trim().split(' ');
-					sect_obj.subj = tmp[0];
-					sect_obj.num = tmp[1];
-					sect_obj.sect_id = title_comps[3].trim();
-
-					cb(sect_obj);
-				}
-				cb(null);
-			});
-		};
+			cb(sect_obj);
+		});
 	};
 
 	function parse_meeting_table(meeting_rows, sect_obj, $, cb) {
@@ -440,7 +434,9 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 		cb(sect_obj)
 	};
 
+
 };
+
 
 CatalogConnector.prototype.save_course_info = function(course_info_obj) {
 	this.course_info.insert(course_info_obj);
