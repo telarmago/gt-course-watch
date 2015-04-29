@@ -122,7 +122,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   		cb = arguments[0][3]
   }
 
-  console.log("PRE CHECK DUPE: ", crn, term);
+  // console.log("PRE CHECK DUPE: ", crn, term);
 
   // Only transition to .check_catalog_entry if CRN, TERMCODE combination
   // Are not found in the term_courses collection.
@@ -134,7 +134,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 		  		// console.log("CRN TESTED: ", crn, ' ', term)
 
 		      if(!$('.errortext').length) {
-		      	console.log('VALID DOCs: ', docs, term, crn);
+		      	// console.log('VALID DOCs: ', docs, term, crn);
 		      	// console.log('VALID CRN: ', crn, ' ', term);
 		      	cb(true, $, term, path);
 		      }
