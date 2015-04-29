@@ -350,7 +350,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 			sect_obj.sect_id = title_comps[3].trim();
 
 			cb(sect_obj);
-		});
+		}
 	};
 
 	function parse_meeting_table(meeting_rows, sect_obj, $, cb) {
