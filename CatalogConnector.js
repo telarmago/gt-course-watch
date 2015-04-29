@@ -30,6 +30,7 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
 };
 
+// Start looking for new terms that have been uploaded to OSCAR
 CatalogConnector.prototype.start_unprobed_term_poller = function(delay) {
 	var _this = this;
 
@@ -53,7 +54,7 @@ CatalogConnector.prototype.stop_unprobed_term_poller = function() {
 };
 
 /*
-THIS IS WHERE CONSUMER MEETS PRODUCER
+THIS IS WHERE CONSUMER (CatalogConnector) MEETS PRODUCER (TermManager)
 */
 CatalogConnector.prototype.poll_unprobed_terms = function(cb) {
 	// Process one term at a time, wait till the q is empty to proceed.
@@ -62,6 +63,8 @@ CatalogConnector.prototype.poll_unprobed_terms = function(cb) {
 	}
 };
 
+
+// Start looking for unrecorded CRNs from OSCAR catalog for a given term
 CatalogConnector.prototype.probe_term_for_crns = function(term_code) {
 	var pathComponents= [
 		'/pls/bprod/bwckschd.p_disp_detail_sched?term_in=',
@@ -92,6 +95,10 @@ CatalogConnector.prototype.probe_term_for_crns = function(term_code) {
 			}
 		};
 
+		// Ideally, we would have checked the term_code + crn combo here
+		// and only add it the qprocessor if the termcod + crn combo is not 
+		// already in term_courses.
+
 		this.qprocessor.fcall_q.push([i, term_code, path_to_probe, transition_cb]);
 		this.qprocessor.alert_q_to_poll();
 	};
@@ -99,7 +106,9 @@ CatalogConnector.prototype.probe_term_for_crns = function(term_code) {
 	_this.term_mgr.set_probed(term_code, true);
 };
 
-//Probe PHASE 1
+// Probe PHASE 1, if this term has not been recorded, hit OSCAR 
+// and check to see if the CRN is valid... if so we check to see if it
+// a valid entry, and then we start parsing it (Phase 2).
 CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   var _this = this;
 
@@ -121,7 +130,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 		  		// console.log("CRN TESTED: ", crn, ' ', term)
 
 		      if(!$('.errortext').length) {
-		      	console.log('VALID CRN: ', crn, ' ', term)
+		      	// console.log('VALID CRN: ', crn, ' ', term)
 		      	cb(true, $, term, path);
 		      }
 	  		});
