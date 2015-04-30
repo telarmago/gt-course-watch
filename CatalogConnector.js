@@ -30,10 +30,15 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_courses = db.get('term_courses');
 	// this.start_crn = 10000;
 	// this.end_crn = 99999;
-	this.start_crn = 20077;
-	this.end_crn = 20077;
+	this.start_crn = 20000;
+	this.end_crn = 21000;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
+	// if the index doesn't get added because a similar one already exists, issue
+	// this command from the mongodb CL shell:
+	// db.term_courses.dropIndexes()
+	// The index should be created successfully thereafter
+	this.term_courses.index({term:1, crn:1}, {unique: true});		
 };
 
 // Start looking for new terms that have been uploaded to OSCAR
@@ -290,7 +295,9 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 };
 
 "Class Schedule Listing page"
-//Probe and parse the schedule listing page
+// Probe and parse the schedule listing page... Since this page will have 
+// all schedule listings for a given SUBJ + CourseNum combination, we essentially
+// just parse them all, and check our database to see if its a duplicate before adding.
 CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 	var _this = this;
 	// console.log(path);
@@ -300,25 +307,37 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 	console.log('ENTERED PARSE SCHEDULE');
 
 	_this.gt_https_req(path, function($) {
-		console.log('REQ COMPLETED');
-		// var x = $('.datadisplaytable[summary="This layout table is used to present the sections found"]').children()
-		// .each(function(i,e){
-		// 	console.log(e.name);
-		// });
-		// console.log(x, x.length);
-
 
 		$('.datadisplaytable[summary="This layout table is used to present the sections found"]')
+		// cheerio sees this part of html different from chrome... chrome has the <tr> tags inside a <tbody>
+		// but cheerio doesn't have the tbody element...
 		.children('tr')
+		// loop through all the  rows of the primary table with all section listings on the page
+		// There are two types of rows to be aware of: title rows, and data rows ( meeting / upper tables)
 		.each(function(i, row){
 			var section_header = $(row).children('th').first();
 
+			// we only process a row from the table if it is a title row, such as:
+			// Master's Thesis - 20083 - ME 7000 - ZIN
 			if (section_header) {
 				var header_link = $(section_header).children('a').first(),
 						header_txt = $(header_link).text(),
-						header_comps = header_txt.split(' - ');
+						header_comps = header_txt.split(' - '); // grab title components
 
-				console.log('HEADER COMPS: ', header_comps);
+				eval_sect_title(header_comps, function(sect_obj) {
+					var next_row = $(row).next(), // grab row with upper / meeeting tables
+							data_cell = $(next_row).children('td').first(),
+							meeting_rows = $(data_cell).find('tr').slice(1), // exclude the meeting header w/ slice
+							upper_table = $(next_row).html().split('<br>');
+
+					parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
+						parse_upper_table(upper_table, sect_obj, function(sect_obj) {
+							// console.log("SAVE TERM CALLED");
+							// console.log('saving: ', sect_obj.crn);
+							_this.save_term_course(sect_obj);
+						});
+					});
+				});
 
 			}
 
@@ -335,6 +354,9 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 		// 		var header_link = $(section_header).children('a')['0'],
 		// 				header_txt = $(header_link).text(),
 		// 				header_comps = header_txt.split(' - ');
+
+
+
 
 		// 		eval_sect_title(header_comps, function(sect_obj) {
 		// 			if(sect_obj) {
@@ -357,6 +379,8 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 
 	});
 
+	// check and see if a given title section is valid, if so, start parsing
+	// its meeting table and upper information table.
 	function eval_sect_title(title_comps, cb) {
 		if(title_comps.length > 3) {
 			//handle case where name of course has a hyphen in it
@@ -374,17 +398,23 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 				term: term,
 				crn: title_comps[1].trim()
 			};
+			// check and see if this section listing has already been recorded
+			// during a prior CRN probing section parsing run.
+			_this.term_courses.find(check_obj)
+			.on('success', function(docs) {
+				if (docs.length == 0) {
+					var sect_obj = check_obj;
+					sect_obj.title = title_comps[0].trim();
 
-			var sect_obj = check_obj;
+					var tmp = title_comps[2].trim().split(' ');
+					sect_obj.subj = tmp[0];
+					sect_obj.num = tmp[1];
+					sect_obj.sect_id = title_comps[3].trim();
 
-			sect_obj.title = title_comps[0].trim();
+					cb(sect_obj);
+				}
+			});
 
-			var tmp = title_comps[2].trim().split(' ');
-			sect_obj.subj = tmp[0];
-			sect_obj.num = tmp[1];
-			sect_obj.sect_id = title_comps[3].trim();
-
-			cb(sect_obj);
 		}
 	};
 
@@ -394,7 +424,7 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 		//Parse the meeting time tables
 		meeting_rows.each(function(meeting_idx, meeting_row) {
 			sect_obj.meetings.push({});
-			$(meeting_row).find('td').each(function(cell_idx,data_cell) {
+			$(meeting_row).find('td').each(function(cell_idx, data_cell) {
 				var cur_meeting = sect_obj.meetings[meeting_idx],
 						cell_contents = $(data_cell).text();
 
@@ -478,7 +508,14 @@ CatalogConnector.prototype.save_course_info = function(course_info_obj) {
 };
 
 CatalogConnector.prototype.save_term_course = function(sect_obj) {
-	this.term_courses.insert(sect_obj);
+	var _this = this;
+
+  this.term_courses.find({term: sect_obj.term, crn: sect_obj.crn})
+	.on('success', function (docs) {
+		if(docs.length == 0) {
+			_this.term_courses.insert(sect_obj);
+		}
+	})
 };
 
 CatalogConnector.prototype.link_to_text = function(link_e) {
