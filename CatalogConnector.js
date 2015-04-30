@@ -28,10 +28,10 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_mgr = term_mgr;
 	this.course_info = db.get('course_info');
 	this.term_courses = db.get('term_courses');
-	// this.start_crn = 10000;
-	// this.end_crn = 99999;
-	this.start_crn = 20000;
-	this.end_crn = 21000;
+	this.start_crn = 10000;
+	this.end_crn = 99999;
+	// this.start_crn = 20000;
+	// this.end_crn = 21000;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
 	// if the index doesn't get added because a similar one already exists, issue
