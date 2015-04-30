@@ -11,6 +11,10 @@ our systems.
 
 This class could be refactored out into two seperate classes:
 One queue processing class and another HTML parsing class.
+
+LESSON LEARNED: JavaScript programs are NOT easy to debug. Therefore,
+they need to be documented pretty well, so you can go back to look at the code
+and actually have a clue of what is going on.
 */
 
 var https = require('https'),
@@ -26,8 +30,8 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_courses = db.get('term_courses');
 	// this.start_crn = 10000;
 	// this.end_crn = 99999;
-	this.start_crn = 20000;
-	this.end_crn = 20100;
+	this.start_crn = 20077;
+	this.end_crn = 20077;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
 };
@@ -119,7 +123,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   		cb = arguments[0][3]
   }
 
-  console.log("PRE CHECK DUPE: ", crn, term);
+  // console.log("PRE CHECK DUPE: ", crn, term);
 
   // Only transition to .check_catalog_entry if CRN, TERMCODE combination
   // Are not found in the term_courses collection.
@@ -131,7 +135,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 		  		// console.log("CRN TESTED: ", crn, ' ', term)
 
 		      if(!$('.errortext').length) {
-		      	console.log('VALID DOCs: ', docs, crn, term);
+		      	// console.log('VALID DOCs: ', docs, crn, term);
 		      	//this transitions to check_catalog_entry
 		      	cb($, term, path);
 		      }
@@ -143,7 +147,6 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 	});
 
 };
-
 
 //Probe PHASE 2. Check to see if it has a catalog entry.
 "'Detailed Class Information' page"
@@ -294,37 +297,64 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 
 	// console.log('INSIDE PARSE SCHEDULE LISTING');
 	// console.log(term, path);
+	console.log('ENTERED PARSE SCHEDULE');
 
 	_this.gt_https_req(path, function($) {
-		$('.datadisplaytable[summary="This layout table is used to present the sections found"] > tr')
-		.each(function(i, row){
-			var section_header = $(row).children('th')['0'];
+		console.log('REQ COMPLETED');
+		// var x = $('.datadisplaytable[summary="This layout table is used to present the sections found"]').children()
+		// .each(function(i,e){
+		// 	console.log(e.name);
+		// });
+		// console.log(x, x.length);
 
-			if(section_header) {
-				var header_link = $(section_header).children('a')['0'],
+
+		$('.datadisplaytable[summary="This layout table is used to present the sections found"]')
+		.children('tr')
+		.each(function(i, row){
+			var section_header = $(row).children('th').first();
+
+			if (section_header) {
+				var header_link = $(section_header).children('a').first(),
 						header_txt = $(header_link).text(),
 						header_comps = header_txt.split(' - ');
 
-				eval_sect_title(header_comps, function(sect_obj) {
-					if(sect_obj) {
-						var next_row = $(row).next(),
-								data_cell = $(next_row).children('td')['0'],
-								meeting_rows = $(data_cell).find('tr').slice(1),
-								upper_table = $(next_row).html().split('<br>');
+				console.log('HEADER COMPS: ', header_comps);
 
-						parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
-							parse_upper_table(upper_table, sect_obj, function(sect_obj) {
-								// console.log("SAVE TERM CALLED");
-								// console.log('saving: ', sect_obj.crn);
-								_this.save_term_course(sect_obj);
-							});
-						});
-					};
-
-				});
-			};
+			}
 
 		});
+
+/// OLD CORE SCHED PARSING BLOCK
+		// $('.datadisplaytable[summary="This layout table is used to present the sections found"] > tr')
+		// .each(function(i, row){
+		// 	console.log('PARSE SCHED LIST: ', i, $(row).text());
+		// 	var section_header = $(row).children('th')['0'];
+		// 	// console.log('section header: ', section_header);
+
+		// 	if(section_header) {
+		// 		var header_link = $(section_header).children('a')['0'],
+		// 				header_txt = $(header_link).text(),
+		// 				header_comps = header_txt.split(' - ');
+
+		// 		eval_sect_title(header_comps, function(sect_obj) {
+		// 			if(sect_obj) {
+		// 				var next_row = $(row).next(),
+		// 						data_cell = $(next_row).children('td')['0'],
+		// 						meeting_rows = $(data_cell).find('tr').slice(1),
+		// 						upper_table = $(next_row).html().split('<br>');
+
+		// 				parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
+		// 					parse_upper_table(upper_table, sect_obj, function(sect_obj) {
+		// 						// console.log("SAVE TERM CALLED");
+		// 						// console.log('saving: ', sect_obj.crn);
+		// 						_this.save_term_course(sect_obj);
+		// 					});
+		// 				});
+		// 			}
+		// 		});
+		// 	}
+		// });
+
 	});
 
 	function eval_sect_title(title_comps, cb) {
