@@ -507,9 +507,15 @@ CatalogConnector.prototype.save_course_info = function(course_info_obj) {
 	this.course_info.insert(course_info_obj);
 };
 
+// THIS method here is why duplicate term_courses documents get created...
+// the index solves it... we could have also solved it by using temp aux storage.
 CatalogConnector.prototype.save_term_course = function(sect_obj) {
 	var _this = this;
 
+	// This is where the async bullshit happens.. Multiple async requests
+	// with the same term + crn combos get queried within a very short time span
+	// of each other, and they both manage to slip through the uniqueness check
+	// here.... This is why we need the unique index that we create in the constructor
   this.term_courses.find({term: sect_obj.term, crn: sect_obj.crn})
 	.on('success', function (docs) {
 		if(docs.length == 0) {
