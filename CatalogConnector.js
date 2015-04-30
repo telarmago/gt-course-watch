@@ -26,8 +26,8 @@ function CatalogConnector(connection_url, term_mgr, unprobedt_delay) {
 	this.term_courses = db.get('term_courses');
 	// this.start_crn = 10000;
 	// this.end_crn = 99999;
-	this.start_crn = 10000;
-	this.end_crn = 90000;
+	this.start_crn = 20000;
+	this.end_crn = 20100;
 	this.start_unprobed_term_poller(unprobedt_delay);
 	this.qprocessor = new FCallQueueProcessor(this.crn_path_valid, this);
 };
@@ -76,12 +76,9 @@ CatalogConnector.prototype.probe_term_for_crns = function(term_code) {
 		'crn_val'
 	],
   	term_period = this.term_mgr.decompose_term_code(term_code),
-  	start_crn = this.start_crn,
-  	stop_crn = this.end_crn,
-  	// stop_crn = 99999,
   	_this = this;
 
-	for(var i=start_crn; i<=stop_crn; i++) {
+	for(var i=_this.start_crn; i<=_this.end_crn; i++) {
 		pathComponents[1] = term_period.year;
 		pathComponents[2] = term_period.month;
 		pathComponents[4] = i;
@@ -91,26 +88,26 @@ CatalogConnector.prototype.probe_term_for_crns = function(term_code) {
 		value when the dequeuer pops it off the queue if I declare it this way. 
 		Declaring it with function transition_cb() notation gives me an 
 		undefined error */
-		var transition_cb = function(is_valid, $, term_code, path) {			
-			if(is_valid) {
-				_this.check_catalog_entry($, term_code, path);
-			}
+		var transition_cb = function($, term_code, path) {			
+			_this.check_catalog_entry($, term_code, path);
 		};
 
 		// Ideally, we would have checked the term_code + crn combo here
-		// and only add it the qprocessor if the termcod + crn combo is not 
+		// and only add it the qprocessor if the termcode + crn combo is not 
 		// already in term_courses.
 
+		//crn_path_valid() is the function that gets called by the qprocessor
 		this.qprocessor.fcall_q.push([i, term_code, path_to_probe, transition_cb]);
 		this.qprocessor.alert_q_to_poll();
 	};
 
+	// set probed to true after all CRNS to be validated / probed are queued in the fcallq
 	_this.term_mgr.set_probed(term_code, true);
 };
 
 // Probe PHASE 1, if this term has not been recorded, hit OSCAR 
 // and check to see if the CRN is valid... if so we check to see if it
-// a valid entry, and then we start parsing it (Phase 2).
+// is a valid entry, and then we start parsing it (Phase 2).
 CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   var _this = this;
 
@@ -122,7 +119,7 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   		cb = arguments[0][3]
   }
 
-  // console.log("PRE CHECK DUPE: ", crn, term);
+  console.log("PRE CHECK DUPE: ", crn, term);
 
   // Only transition to .check_catalog_entry if CRN, TERMCODE combination
   // Are not found in the term_courses collection.
@@ -134,9 +131,9 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
 		  		// console.log("CRN TESTED: ", crn, ' ', term)
 
 		      if(!$('.errortext').length) {
-		      	// console.log('VALID DOCs: ', docs, term, crn);
-		      	// console.log('VALID CRN: ', crn, ' ', term);
-		      	cb(true, $, term, path);
+		      	console.log('VALID DOCs: ', docs, crn, term);
+		      	//this transitions to check_catalog_entry
+		      	cb($, term, path);
 		      }
 	  		});
 	  	}
@@ -163,7 +160,7 @@ CatalogConnector.prototype.check_catalog_entry = function($, term, path) {
 	});
 };
 
-"'Detailed Class Information' page"
+"Catalog Entries page"
 // Probe the catalog entry and scrape out information.
 CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 	var _this = this;
@@ -178,13 +175,19 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 		}
 
 		if(class_title_txt) {
+			//FIXME
+			//The parsing of classes with hyphens does not currently work properly... 
+			//it leaves off content beyond the first hyphen
 			var title_comps = class_title_txt.split('-'),
 				tmp = title_comps[0].trim(),
 				tmp = tmp.split(' '),
 				subj = tmp[0],
 				course_num = tmp[1],
+				//fix the courese title here..
 				course_title = title_comps[1].trim();
 
+			// This will check if we have a course info obj for this course stored...
+			// if not, it will parse out the HTML of the catalog entry, and record it.
 			parse_html(course_info_comps, subj, course_num, course_title);
 			check_sched_path(course_info_comps, subj, course_num);
 		}
@@ -237,7 +240,7 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 
 		function parse_filtering() {
 			var grade_basis = course_info_comps.filter(function(e) {
-				return e.match(/span/);
+				return e.match(/Grade Basis/);
 			});
 
 			if(grade_basis.length) {
@@ -246,26 +249,24 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 			}
 
 			var dept = course_info_comps.filter(function(e) {
-				return e.match(/Depart|Dept/i);
+				return e.match(/Depart|Dept|Department/i);
 			});
 
 			if(dept.length) {
 				course_info_obj.dept = dept[0].trim();
 			}
-
 			_this.save_course_info(course_info_obj);
 		}
 
 	};
 
 	// CHECK SCHED PATH SECTION
-
+	// Look for the sections schedule page link, if we find it, we start parsing it
 	function check_sched_path(course_info_comps, subj, course_num) {
-
 		if(course_info_comps) {
 			//Find the Schedule listings page path to probe.
 			var sched_listing_href = course_info_comps.filter(function(e) {
-				return e.match(/href/);
+				return e.match(/All Sections for this Course/);
 			});
 
 			if(sched_listing_href.length) {
@@ -281,12 +282,11 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 				}
 			}
 		}
-
 	};
 
 };
 
-"'Detailed Class Information' page"
+"Class Schedule Listing page"
 //Probe and parse the schedule listing page
 CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 	var _this = this;
@@ -339,6 +339,11 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 					title_comps[4]
 				]
 			}
+
+			var check_obj = {
+				term: term,
+				crn: title_comps[1].trim()
+			};
 
 			var sect_obj = check_obj;
 
