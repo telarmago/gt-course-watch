@@ -134,18 +134,18 @@ CatalogConnector.prototype.crn_path_valid = function(crn, term, path, cb) {
   // Are not found in the term_courses collection.
   this.term_courses.find({term: term, crn: crn})
 	.on('success', function (docs) {
-	  	if(docs.length == 0) {
-	  		_this.gt_https_req(path, function($){
-	  			// console.log('err len', $('.errortext').length)
-		  		// console.log("CRN TESTED: ", crn, ' ', term)
+  	if(docs.length == 0) {
+  		_this.gt_https_req(path, function($){
+  			// console.log('err len', $('.errortext').length)
+	  		console.log("CRN TESTED: ", crn, ' ', term)
 
-		      if(!$('.errortext').length) {
-		      	// console.log('VALID DOCs: ', docs, crn, term);
-		      	//this transitions to check_catalog_entry
-		      	cb($, term, path);
-		      }
-	  		});
-	  	}
+	      if(!$('.errortext').length) {
+	      	console.log('VALID CRN / FOUND DOCs: ', crn, term, docs);
+	      	//this transitions to check_catalog_entry
+	      	cb($, term, path);
+	      }
+  		});
+  	}
 	})
 	.on('error', function(err){
 		console.log(err);
@@ -338,45 +338,8 @@ CatalogConnector.prototype.parse_schedule_listing = function(term, path) {
 						});
 					});
 				});
-
 			}
-
 		});
-
-/// OLD CORE SCHED PARSING BLOCK
-		// $('.datadisplaytable[summary="This layout table is used to present the sections found"] > tr')
-		// .each(function(i, row){
-		// 	console.log('PARSE SCHED LIST: ', i, $(row).text());
-		// 	var section_header = $(row).children('th')['0'];
-		// 	// console.log('section header: ', section_header);
-
-		// 	if(section_header) {
-		// 		var header_link = $(section_header).children('a')['0'],
-		// 				header_txt = $(header_link).text(),
-		// 				header_comps = header_txt.split(' - ');
-
-
-
-
-		// 		eval_sect_title(header_comps, function(sect_obj) {
-		// 			if(sect_obj) {
-		// 				var next_row = $(row).next(),
-		// 						data_cell = $(next_row).children('td')['0'],
-		// 						meeting_rows = $(data_cell).find('tr').slice(1),
-		// 						upper_table = $(next_row).html().split('<br>');
-
-		// 				parse_meeting_table(meeting_rows, sect_obj, $, function(sect_obj) {
-		// 					parse_upper_table(upper_table, sect_obj, function(sect_obj) {
-		// 						// console.log("SAVE TERM CALLED");
-		// 						// console.log('saving: ', sect_obj.crn);
-		// 						_this.save_term_course(sect_obj);
-		// 					});
-		// 				});
-		// 			}
-		// 		});
-		// 	}
-		// });
-
 	});
 
 	// check and see if a given title section is valid, if so, start parsing
