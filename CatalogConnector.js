@@ -183,16 +183,21 @@ CatalogConnector.prototype.parse_catalog_entry = function(term, path) {
 		}
 
 		if(class_title_txt) {
-			//FIXME
-			//The parsing of classes with hyphens does not currently work properly... 
-			//it leaves off content beyond the first hyphen
 			var title_comps = class_title_txt.split('-'),
 				tmp = title_comps[0].trim(),
 				tmp = tmp.split(' '),
 				subj = tmp[0],
-				course_num = tmp[1],
-				//fix the courese title here..
+				course_num = tmp[1];
+
+			//The parsing of classes with hyphens does not currently work properly... 
+			//it leaves off content beyond the first hyphen
+			//fix the courese title with hyphens here..
+			var course_title;
+			if(title_comps.length > 2) {
+				course_title = title_comps[1].trim() + ' - ' + title_comps[2].trim();
+			} else {
 				course_title = title_comps[1].trim();
+			}
 
 			// This will check if we have a course info obj for this course stored...
 			// if not, it will parse out the HTML of the catalog entry, and record it.
