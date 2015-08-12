@@ -127,9 +127,9 @@ if(HTTPS_ENABLED) io.listen(secureServer);
 
 //*INITIALIZE CUSTOM MODULES
 var myMongoController = new MongoController(mongo_url);
-var myTermManager = new TermManager(mongo_url, TERM_PRODUCER_DELAY);
-var myCatalogConnector = 
-  new CatalogConnector(mongo_url, myTermManager, TERM_CONSUMER_DELAY);
+// var myTermManager = new TermManager(mongo_url, TERM_PRODUCER_DELAY);
+// var myCatalogConnector = 
+//   new CatalogConnector(mongo_url, myTermManager, TERM_CONSUMER_DELAY);
 var myDispatcher = new PhantomJobDispatcher( myMailer, myMongoController);
 myDispatcher.startDispatcher(PHANTOM_EVENTLOOP_DELAY_MS);
 
