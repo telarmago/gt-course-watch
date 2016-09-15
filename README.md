@@ -2,17 +2,23 @@ GTCourseWatch
 =====
 This is a registration assistance web application written in Node.js; access the site at [gtcoursewatch.us](gtcoursewatch.us)
 
+UPDATE: This site is no longer hosted by me, I don't have the resouces to host it. It can still be run locally and used for personal purposes for the forseeable future. Here is how: 
+
+Start a mongod instance then...
 
 ### Running Locally
 ```
 node app.js
 ```
 
+Then simply access localhost:8080 in your local browser to start using!
+
 ### Server Deployment
 ```
 chmod +x start
 ./start
 ```
+Designed to work on a CentOS RHEL server.
 Note: mongod must be running in both cases.
 
 ## Features
