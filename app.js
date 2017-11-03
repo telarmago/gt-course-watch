@@ -82,20 +82,22 @@ if(process.env.BUILD_ENVIRONMENT == 'production') {
 
   registerPartials();
 } else {
-  var https_opts = {
-    key: fs.readFileSync("/Users/vikram/amazon_ec2/ssl_key.pem"),
-    cert: fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/www_gtcoursewatch_us.crt"),
-    ca: [
-      fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/AddTrustExternalCARoot.crt"),
-      fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/COMODORSAAddTrustCA.crt"),
-      fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/COMODORSADomainValidationSecureServerCA.crt")
-    ]
-  }
+  // var https_opts = {
+  //   key: fs.readFileSync("/Users/vikram/amazon_ec2/ssl_key.pem"),
+  //   cert: fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/www_gtcoursewatch_us.crt"),
+  //   ca: [
+  //     fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/AddTrustExternalCARoot.crt"),
+  //     fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/COMODORSAAddTrustCA.crt"),
+  //     fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_ssl_certs/COMODORSADomainValidationSecureServerCA.crt")
+  //   ]
+  // }
+  let https_opts = {};
 
   var secureServer = require('https').createServer(https_opts, app).listen(8000);
   var hostName = "http://localhost:8080";
   var mailerEmail = "gtcoursewatch.mailer@gmail.com";
-  var mailerPass = fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_gmail_pass.txt").toString();
+  var mailerPass = 'Vikram8!8';
+  // var mailerPass = fs.readFileSync("/Users/vikram/amazon_ec2/gtcw_gmail_pass.txt").toString();
   var myMailer = new Mailer(mailerEmail, 
     { service: 'gmail', 
       pass: mailerPass });
